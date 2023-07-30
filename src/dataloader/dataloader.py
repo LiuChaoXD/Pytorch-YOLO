@@ -76,8 +76,7 @@ class ListDataset(Dataset):
 
             # cache labels
             self.cache_boxes = [
-                np.loadtxt(self.label_files[index]).reshape(-1, 5)
-                for index in range(len(self.label_files))
+                np.loadtxt(self.label_files[index]).reshape(-1, 5) for index in range(len(self.label_files))
             ]
 
     def __getitem__(self, index):
@@ -185,12 +184,8 @@ class ListDataset(Dataset):
             im = cv2.imread(random.choice(self.img_files))  # sample image
             ratio = self.img_size / max(im.shape[0], im.shape[1])  # max(h, w)  # ratio
             b += im.nbytes * ratio**2
-        mem_required = (
-            b * len(self.img_files) / n
-        )  # GB required to cache dataset into RAM
+        mem_required = b * len(self.img_files) / n  # GB required to cache dataset into RAM
         mem = psutil.virtual_memory()
         cache = mem_required * (1 + safety_margin) < mem.available
-        LOGGER.info(
-            f"{colorstr('Cache:')} require {mem_required/gb:.2f} GB, available size {mem.available/gb:.2f}. "
-        )
+        LOGGER.info(f"{colorstr('Cache:')} require {mem_required/gb:.2f} GB, available size {mem.available/gb:.2f}. ")
         return cache

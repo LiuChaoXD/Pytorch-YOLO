@@ -30,11 +30,7 @@ def process_batch(detections, labels, iouv):
         # IoU > threshold and classes match
         x = torch.where((iou >= iouv[i]) & correct_class)
         if x[0].shape[0]:
-            matches = (
-                torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]), 1)
-                .cpu()
-                .numpy()
-            )  # [label, detect, iou]
+            matches = torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]), 1).cpu().numpy()  # [label, detect, iou]
             if x[0].shape[0] > 1:
                 matches = matches[matches[:, 2].argsort()[::-1]]
                 matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
@@ -186,12 +182,8 @@ def non_max_suppression(
     """
 
     # Checks
-    assert (
-        0 <= conf_thres <= 1
-    ), f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0'
-    assert (
-        0 <= iou_thres <= 1
-    ), f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
+    assert 0 <= conf_thres <= 1, f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0'
+    assert 0 <= iou_thres <= 1, f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
     # YOLOv3 model in validation model, output = (inference_out, loss_out)
     if isinstance(prediction, (list, tuple)):
         prediction = prediction[0]  # select only inference output

@@ -14,9 +14,7 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
         d : dilation ratio.
     """
     if d > 1:
-        k = (
-            d * (k - 1) + 1 if isinstance(k, int) else [d * (x - 1) + 1 for x in k]
-        )  # actual kernel-size
+        k = d * (k - 1) + 1 if isinstance(k, int) else [d * (x - 1) + 1 for x in k]  # actual kernel-size
     if p is None:
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
@@ -40,17 +38,9 @@ class Conv(nn.Module):
 
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
         super().__init__()
-        self.conv = nn.Conv2d(
-            c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False
-        )
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        self.act = (
-            self.default_act
-            if act is True
-            else act
-            if isinstance(act, nn.Module)
-            else nn.Identity()
-        )
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
@@ -72,9 +62,7 @@ class DWConv(Conv):
         activation : activation function. Default value is nn.SiLU()
     """
 
-    def __init__(
-        self, c1, c2, k=1, s=1, d=1, act=True
-    ):  # ch_in, ch_out, kernel, stride, dilation, activation
+    def __init__(self, c1, c2, k=1, s=1, d=1, act=True):  # ch_in, ch_out, kernel, stride, dilation, activation
         super().__init__(c1, c2, k, s, g=math.gcd(c1, c2), d=d, act=act)
 
 
@@ -134,9 +122,7 @@ class TransformerBlock(nn.Module):
         if c1 != c2:
             self.conv = Conv(c1, c2)
         self.linear = nn.Linear(c2, c2)  # learnable position embedding
-        self.tr = nn.Sequential(
-            *(TransformerLayer(c2, num_heads) for _ in range(num_layers))
-        )
+        self.tr = nn.Sequential(*(TransformerLayer(c2, num_heads) for _ in range(num_layers)))
         self.c2 = c2
 
     def forward(self, x):
@@ -163,9 +149,7 @@ class Bottleneck(nn.Module):
 
 class BottleneckCSP(nn.Module):
     # CSP Bottleneck https://github.com/WongKinYiu/CrossStagePartialNetworks
-    def __init__(
-        self, c1, c2, n=1, shortcut=True, g=1, e=0.5
-    ):  # ch_in, ch_out, number, shortcut, groups, expansion
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, 1, 1)
@@ -174,9 +158,7 @@ class BottleneckCSP(nn.Module):
         self.cv4 = Conv(2 * c_, c2, 1, 1)
         self.bn = nn.BatchNorm2d(2 * c_)  # applied to cat(cv2, cv3)
         self.act = nn.SiLU()
-        self.m = nn.Sequential(
-            *(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n))
-        )
+        self.m = nn.Sequential(*(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)))
 
     def forward(self, x):
         y1 = self.cv3(self.m(self.cv1(x)))
@@ -200,17 +182,13 @@ class CrossConv(nn.Module):
 
 class C3(nn.Module):
     # CSP Bottleneck with 3 convolutions
-    def __init__(
-        self, c1, c2, n=1, shortcut=True, g=1, e=0.5
-    ):  # ch_in, ch_out, number, shortcut, groups, expansion
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, 1, 1)
         self.cv2 = Conv(c1, c_, 1, 1)
         self.cv3 = Conv(2 * c_, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.Sequential(
-            *(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n))
-        )
+        self.m = nn.Sequential(*(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)))
 
     def forward(self, x):
         return self.cv3(torch.cat((self.m(self.cv1(x)), self.cv2(x)), 1))
@@ -221,9 +199,7 @@ class C3x(C3):
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
         super().__init__(c1, c2, n, shortcut, g, e)
         c_ = int(c2 * e)
-        self.m = nn.Sequential(
-            *(CrossConv(c_, c_, 3, 1, g, 1.0, shortcut) for _ in range(n))
-        )
+        self.m = nn.Sequential(*(CrossConv(c_, c_, 3, 1, g, 1.0, shortcut) for _ in range(n)))
 
 
 class C3TR(C3):
@@ -257,9 +233,7 @@ class SPP(nn.Module):
         c_ = c1 // 2  # hidden channels
         self.cv1 = Conv(c1, c_, 1, 1)
         self.cv2 = Conv(c_ * (len(k) + 1), c2, 1, 1)
-        self.m = nn.ModuleList(
-            [nn.MaxPool2d(kernel_size=x, stride=1, padding=x // 2) for x in k]
-        )
+        self.m = nn.ModuleList([nn.MaxPool2d(kernel_size=x, stride=1, padding=x // 2) for x in k])
 
     def forward(self, x):
         x = self.cv1(x)
@@ -290,9 +264,7 @@ class SPPF(nn.Module):
 
 class Focus(nn.Module):
     # Focus wh information into c-space
-    def __init__(
-        self, c1, c2, k=1, s=1, p=None, g=1, act=True
-    ):  # ch_in, ch_out, kernel, stride, padding, groups
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
         super().__init__()
         self.conv = Conv(c1 * 4, c2, k, s, p, g, act=act)
         # self.contract = Contract(gain=2)
@@ -337,11 +309,7 @@ class GhostBottleneck(nn.Module):
             GhostConv(c_, c2, 1, 1, act=False),
         )  # pw-linear
         self.shortcut = (
-            nn.Sequential(
-                DWConv(c1, c1, k, s, act=False), Conv(c1, c2, 1, 1, act=False)
-            )
-            if s == 2
-            else nn.Identity()
+            nn.Sequential(DWConv(c1, c1, k, s, act=False), Conv(c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
         )
 
     def forward(self, x):

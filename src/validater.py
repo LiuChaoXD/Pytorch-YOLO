@@ -57,9 +57,7 @@ def compute_metric(model, dataloader, conf_thres, iou_thres, max_det, classes, a
                 preds, train_out = model(imgs)
             # NMS
             # to pixels
-            targets[:, 2:] *= torch.tensor(
-                (width, height, width, height), device=device
-            )
+            targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)
             lb = []  # for autolabelling
             preds = non_max_suppression(
                 preds,
@@ -75,9 +73,7 @@ def compute_metric(model, dataloader, conf_thres, iou_thres, max_det, classes, a
                 labels = targets[targets[:, 0] == si, 1:]
                 # number of labels, predictions
                 nl, npr = labels.shape[0], pred.shape[0]
-                correct = torch.zeros(
-                    npr, niou, dtype=torch.bool, device=device
-                )  # init
+                correct = torch.zeros(npr, niou, dtype=torch.bool, device=device)  # init
                 # seen += 1
 
                 if npr == 0:

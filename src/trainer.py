@@ -141,6 +141,7 @@ def train(args):
         optimizer.load_state_dict(status["optimizer_state_dict"])
         scheduler.load_state_dict(status["scheduler_state_dict"])
         print("continuous training by {}".format(args.continuous))
+    torch.save(model.state_dict(), args.parameter_dir + "/yolo.ckpt")
     # ====================================== train ==================================
     for epoch in range(start_epoch, args.EPOCH + 1):
         with tqdm(train_dataloader, desc=f"Training Epoch {epoch}") as _tqdm:
